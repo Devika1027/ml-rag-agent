@@ -1,0 +1,84 @@
+{
+  "name": "ML RAG Agent Email Processing Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "postProcessAction": "read"
+      },
+      "name": "IMAP Email Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8000/api/v1/query",
+        "options": {},
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "query",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "name": "HTTP Request to RAG Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "rag-agent@domain.com",
+        "toEmail": "={{ $node[\"IMAP Email Trigger\"].json[\"from\"] }}",
+        "subject": "={{ 'Re: ' + $node[\"IMAP Email Trigger\"].json[\"subject\"] }}",
+        "text": "={{ $json.answer }}"
+      },
+      "name": "Send Reply Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "IMAP Email Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request to RAG Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request to RAG Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Reply Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
